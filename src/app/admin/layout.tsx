@@ -7,10 +7,12 @@ import type { ReactNode } from "react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/coupons", label: "Coupons" },
   { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/customers", label: "Customers" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
