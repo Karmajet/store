@@ -15,9 +15,10 @@ interface ShippingData {
 interface Props {
   onSubmit: (data: ShippingData) => void;
   loading?: boolean;
+  onStateChange?: (state: string) => void;
 }
 
-export default function ShippingForm({ onSubmit, loading }: Props) {
+export default function ShippingForm({ onSubmit, loading, onStateChange }: Props) {
   const [form, setForm] = useState<ShippingData>({
     name: "",
     email: "",
@@ -98,7 +99,10 @@ export default function ShippingForm({ onSubmit, loading }: Props) {
             type="text"
             required
             value={form.state}
-            onChange={(e) => update("state", e.target.value)}
+            onChange={(e) => {
+              update("state", e.target.value);
+              onStateChange?.(e.target.value);
+            }}
             className={inputClass}
           />
         </div>

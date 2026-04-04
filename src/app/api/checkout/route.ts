@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { calculateShipping, type ShippingMethod } from "@/lib/shipping";
+import { calculateTax } from "@/lib/tax";
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +12,8 @@ export async function POST(request: NextRequest) {
     const userId = (session?.user as { id?: string })?.id || null;
 
     const body = await request.json();
-    const { items, shipping, couponCode } = body;
+    const { items, shipping, couponCode, shippingMethod: shpMethod } = body;
+    const shippingMethod: ShippingMethod = shpMethod || "standard";
 
     if (!items?.length || !shipping?.email) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -128,7 +131,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const totalAmount = subtotal - discountAmount;
+    const subtotalAfterDiscount = subtotal - discountAmount;
+    const shippingCost = calculateShipping(subtotal, shippingMethod);
+    const taxAmount = calculateTax(subtotalAfterDiscount, shipping.state || "");
+    const totalAmount = subtotalAfterDiscount + shippingCost + taxAmount;
+
+    // Add shipping as a line item
+    if (shippingCost > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Shipping" },
+          unit_amount: shippingCost,
+        },
+        quantity: 1,
+      });
+    }
+
+    // Add tax as a line item
+    if (taxAmount > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Tax" },
+          unit_amount: taxAmount,
+        },
+        quantity: 1,
+      });
+    }
 
     // Derive base URL from request headers
     const host = request.headers.get("host") || "localhost:3000";
@@ -152,6 +182,10 @@ export async function POST(request: NextRequest) {
         userId,
         couponId,
         discountAmount,
+        subtotalAmount: subtotal,
+        shippingMethod,
+        shippingCost,
+        taxAmount,
         shippingName: shipping.name,
         shippingAddress: shipping.address,
         shippingCity: shipping.city,

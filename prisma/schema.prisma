@@ -71,7 +71,11 @@ model Order {
   couponId        String?
   coupon          Coupon?     @relation(fields: [couponId], references: [id])
   discountAmount  Int         @default(0) // cents
-  totalAmount     Int         // cents
+  subtotalAmount  Int         @default(0) // cents
+  shippingMethod  String?
+  shippingCost    Int         @default(0) // cents
+  taxAmount       Int         @default(0) // cents
+  totalAmount     Int         // cents (grand total)
   createdAt       DateTime    @default(now())
   items           OrderItem[]
 }
