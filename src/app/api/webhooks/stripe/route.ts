@@ -24,21 +24,35 @@ export async function POST(request: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    // Update order status
-    const order = await prisma.order.update({
-      where: { stripeSessionId: session.id },
-      data: {
-        status: "paid",
-        stripePaymentId: session.payment_intent as string,
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-            variant: true,
+    // Atomically update order status AND decrement stock
+    const order = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { stripeSessionId: session.id },
+        data: {
+          status: "paid",
+          stripePaymentId: session.payment_intent as string,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+              variant: true,
+            },
           },
         },
-      },
+      });
+
+      // Decrement stock for each item's variant
+      for (const item of updatedOrder.items) {
+        if (item.variantId) {
+          await tx.variant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+      }
+
+      return updatedOrder;
     });
 
     // Send receipt email (don't fail the webhook if email fails)

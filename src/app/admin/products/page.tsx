@@ -34,7 +34,7 @@ export default async function AdminProductsPage() {
                 Price
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
-                Variants
+                Stock
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">
                 Active
@@ -53,8 +53,15 @@ export default async function AdminProductsPage() {
                 <td className="px-4 py-3 text-sm text-gray-600">
                   {formatPrice(product.price)}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {product.variants.length}
+                <td className="px-4 py-3 text-sm">
+                  {(() => {
+                    const total = product.variants.reduce((s, v) => s + v.stock, 0);
+                    if (total <= 0)
+                      return <span className="font-medium text-red-600">Out of stock</span>;
+                    if (total <= 5)
+                      return <span className="font-medium text-orange-600">{total} left</span>;
+                    return <span className="text-gray-600">{total}</span>;
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <ProductActiveToggle

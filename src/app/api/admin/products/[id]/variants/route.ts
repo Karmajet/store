@@ -27,6 +27,29 @@ export async function POST(
   return NextResponse.json(variant);
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  await params;
+  const body = await request.json();
+  const { variantId, stock } = body;
+
+  if (!variantId || stock === undefined) {
+    return NextResponse.json({ error: "Missing variantId or stock" }, { status: 400 });
+  }
+
+  const variant = await prisma.variant.update({
+    where: { id: variantId },
+    data: { stock },
+  });
+
+  return NextResponse.json(variant);
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

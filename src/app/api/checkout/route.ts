@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
+        if (variant.stock < item.quantity) {
+          return NextResponse.json(
+            {
+              error: `${product.name} (${variant.name}: ${variant.value}) only has ${variant.stock} in stock`,
+            },
+            { status: 400 }
+          );
+        }
         unitPrice += variant.priceDiff;
         variantId = variant.id;
         variantLabel = ` (${variant.name}: ${variant.value})`;
