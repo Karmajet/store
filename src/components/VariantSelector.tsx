@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
+import { useToast } from "@/context/ToastContext";
 import { formatPrice } from "@/lib/utils";
 
 interface Variant {
@@ -24,6 +25,7 @@ interface Props {
 
 export default function VariantSelector({ product, variants }: Props) {
   const { addItem } = useCart();
+  const { toast } = useToast();
   const [quantity, setQuantity] = useState(1);
 
   // Group variants by name (e.g. "Size" -> ["S", "M", "L"])
@@ -72,6 +74,7 @@ export default function VariantSelector({ product, variants }: Props) {
 
   const handleClick = () => {
     handleAddToCart();
+    toast(`${product.name} added to cart`);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

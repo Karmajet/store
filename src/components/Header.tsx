@@ -20,6 +20,12 @@ export default function Header() {
             {status === "loading" ? null : session ? (
               <>
                 <Link
+                  href="/wishlist"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  Wishlist
+                </Link>
+                <Link
                   href={role === "admin" ? "/admin" : "/account"}
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
