@@ -9,7 +9,9 @@ import { calculateTax } from "@/lib/tax";
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id || null;
+    const sessionUser = session?.user as { id?: string; role?: string } | undefined;
+    // Only link order to userId if it's a customer (not admin)
+    const userId = sessionUser?.role === "customer" ? sessionUser.id || null : null;
 
     const body = await request.json();
     const { items, shipping, couponCode, shippingMethod: shpMethod } = body;
