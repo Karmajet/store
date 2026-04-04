@@ -4,11 +4,20 @@ import { getToken } from "next-auth/jwt";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect admin routes except login
+  // Protect admin routes — require admin role
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const token = await getToken({ req: request });
-    if (!token) {
+    if (!token || token.role !== "admin") {
       const loginUrl = new URL("/admin/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Protect account routes — require any authenticated user
+  if (pathname.startsWith("/account")) {
+    const token = await getToken({ req: request });
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
   }
@@ -17,5 +26,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*"],
 };

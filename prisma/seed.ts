@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Clear existing data
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.variant.deleteMany();
+  await prisma.product.deleteMany();
+
   // Create admin user
   const passwordHash = await bcrypt.hash("admin123", 10);
   await prisma.adminUser.upsert({
@@ -16,96 +22,81 @@ async function main() {
     },
   });
 
-  // Create products
+  // Create CF products
   const products = [
     {
-      name: "Classic T-Shirt",
-      slug: "classic-t-shirt",
+      name: "CF Court Tee - White",
+      slug: "cf-court-tee-white",
       description:
-        "A comfortable everyday cotton t-shirt with a classic fit. Pre-shrunk fabric for lasting wear.",
+        "Premium white t-shirt featuring the CF logo with tennis court outline. Clean design for on and off the court.",
+      price: 3499,
+      imageUrl: "/images/cf-court-tee-white.png",
+      variants: [
+        { name: "Size", value: "S", sku: "CF-CTW-S", stock: 25, priceDiff: 0 },
+        { name: "Size", value: "M", sku: "CF-CTW-M", stock: 50, priceDiff: 0 },
+        { name: "Size", value: "L", sku: "CF-CTW-L", stock: 30, priceDiff: 0 },
+        { name: "Size", value: "XL", sku: "CF-CTW-XL", stock: 15, priceDiff: 200 },
+      ],
+    },
+    {
+      name: "CF Logo Tee",
+      slug: "cf-logo-tee",
+      description:
+        "Classic white tee with the CF logo center chest. Minimal, versatile, and built for comfort.",
       price: 2999,
-      imageUrl: "https://picsum.photos/seed/tshirt/600/600",
+      imageUrl: "/images/cf-logo-tee-white.png",
       variants: [
-        { name: "Size", value: "Small", sku: "TSH-S", stock: 25, priceDiff: 0 },
-        { name: "Size", value: "Medium", sku: "TSH-M", stock: 50, priceDiff: 0 },
-        { name: "Size", value: "Large", sku: "TSH-L", stock: 30, priceDiff: 0 },
-        { name: "Size", value: "XL", sku: "TSH-XL", stock: 15, priceDiff: 200 },
+        { name: "Size", value: "S", sku: "CF-LT-S", stock: 20, priceDiff: 0 },
+        { name: "Size", value: "M", sku: "CF-LT-M", stock: 40, priceDiff: 0 },
+        { name: "Size", value: "L", sku: "CF-LT-L", stock: 35, priceDiff: 0 },
+        { name: "Size", value: "XL", sku: "CF-LT-XL", stock: 10, priceDiff: 200 },
       ],
     },
     {
-      name: "Denim Jacket",
-      slug: "denim-jacket",
+      name: "Just Watch Tee",
+      slug: "just-watch-tee",
       description:
-        "Rugged denim jacket with a modern slim fit. Perfect for layering in any season.",
-      price: 8999,
-      imageUrl: "https://picsum.photos/seed/denim/600/600",
+        'Statement tee with the "Just Watch" tennis player graphic. Bold design for those who let their game do the talking.',
+      price: 3499,
+      imageUrl: "/images/cf-just-watch-tee.png",
       variants: [
-        { name: "Size", value: "Small", sku: "DNM-S", stock: 10, priceDiff: 0 },
-        { name: "Size", value: "Medium", sku: "DNM-M", stock: 20, priceDiff: 0 },
-        { name: "Size", value: "Large", sku: "DNM-L", stock: 15, priceDiff: 0 },
+        { name: "Size", value: "S", sku: "CF-JW-S", stock: 15, priceDiff: 0 },
+        { name: "Size", value: "M", sku: "CF-JW-M", stock: 30, priceDiff: 0 },
+        { name: "Size", value: "L", sku: "CF-JW-L", stock: 25, priceDiff: 0 },
+        { name: "Size", value: "XL", sku: "CF-JW-XL", stock: 10, priceDiff: 200 },
       ],
     },
     {
-      name: "Running Sneakers",
-      slug: "running-sneakers",
+      name: "CF Court Tee - Black",
+      slug: "cf-court-tee-black",
       description:
-        "Lightweight mesh sneakers with responsive cushioning. Great for daily runs or casual wear.",
-      price: 12999,
-      imageUrl: "https://picsum.photos/seed/sneakers/600/600",
+        "Premium black t-shirt with the CF logo and court outline in white. A staple for any tennis wardrobe.",
+      price: 3499,
+      imageUrl: "/images/cf-court-tee-black.png",
       variants: [
-        { name: "Size", value: "8", sku: "SNK-8", stock: 12, priceDiff: 0 },
-        { name: "Size", value: "9", sku: "SNK-9", stock: 18, priceDiff: 0 },
-        { name: "Size", value: "10", sku: "SNK-10", stock: 20, priceDiff: 0 },
-        { name: "Size", value: "11", sku: "SNK-11", stock: 8, priceDiff: 0 },
-        { name: "Size", value: "12", sku: "SNK-12", stock: 5, priceDiff: 500 },
+        { name: "Size", value: "S", sku: "CF-CTB-S", stock: 20, priceDiff: 0 },
+        { name: "Size", value: "M", sku: "CF-CTB-M", stock: 45, priceDiff: 0 },
+        { name: "Size", value: "L", sku: "CF-CTB-L", stock: 30, priceDiff: 0 },
+        { name: "Size", value: "XL", sku: "CF-CTB-XL", stock: 12, priceDiff: 200 },
       ],
     },
     {
-      name: "Leather Belt",
-      slug: "leather-belt",
+      name: "CF Snapback",
+      slug: "cf-snapback",
       description:
-        "Genuine leather belt with a brushed nickel buckle. A timeless accessory for any outfit.",
-      price: 4500,
-      imageUrl: "https://picsum.photos/seed/belt/600/600",
+        "White and black snapback cap with the embroidered CF logo. Adjustable fit, perfect for match day or everyday.",
+      price: 2499,
+      imageUrl: "/images/cf-snapback.png",
       variants: [
-        { name: "Color", value: "Brown", sku: "BLT-BRN", stock: 30, priceDiff: 0 },
-        { name: "Color", value: "Black", sku: "BLT-BLK", stock: 25, priceDiff: 0 },
-      ],
-    },
-    {
-      name: "Canvas Backpack",
-      slug: "canvas-backpack",
-      description:
-        "Durable canvas backpack with padded laptop compartment and multiple pockets.",
-      price: 5999,
-      imageUrl: "https://picsum.photos/seed/backpack/600/600",
-      variants: [
-        { name: "Color", value: "Navy", sku: "BAG-NVY", stock: 20, priceDiff: 0 },
-        { name: "Color", value: "Olive", sku: "BAG-OLV", stock: 15, priceDiff: 0 },
-        { name: "Color", value: "Gray", sku: "BAG-GRY", stock: 10, priceDiff: 0 },
-      ],
-    },
-    {
-      name: "Wool Beanie",
-      slug: "wool-beanie",
-      description:
-        "Soft merino wool beanie. Warm, breathable, and perfect for cold weather.",
-      price: 1999,
-      imageUrl: "https://picsum.photos/seed/beanie/600/600",
-      variants: [
-        { name: "Color", value: "Charcoal", sku: "BNE-CHR", stock: 40, priceDiff: 0 },
-        { name: "Color", value: "Burgundy", sku: "BNE-BRG", stock: 35, priceDiff: 0 },
-        { name: "Color", value: "Forest Green", sku: "BNE-GRN", stock: 25, priceDiff: 0 },
+        { name: "Size", value: "One Size", sku: "CF-SNAP-OS", stock: 50, priceDiff: 0 },
       ],
     },
   ];
 
   for (const p of products) {
     const { variants, ...productData } = p;
-    await prisma.product.upsert({
-      where: { slug: productData.slug },
-      update: {},
-      create: {
+    await prisma.product.create({
+      data: {
         ...productData,
         variants: {
           create: variants,
@@ -114,7 +105,7 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: admin user + 6 products");
+  console.log("Seed complete: admin user + 5 CF products");
 }
 
 main()

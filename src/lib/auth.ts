@@ -14,24 +14,66 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.adminUser.findUnique({
+        // Check customer users first
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
-        if (!user) return null;
+        if (user) {
+          const valid = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash
+          );
+          if (!valid) return null;
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: "customer",
+          };
+        }
 
-        const valid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-        if (!valid) return null;
+        // Then check admin users
+        const admin = await prisma.adminUser.findUnique({
+          where: { email: credentials.email },
+        });
 
-        return { id: user.id, email: user.email, name: user.name };
+        if (admin) {
+          const valid = await bcrypt.compare(
+            credentials.password,
+            admin.passwordHash
+          );
+          if (!valid) return null;
+          return {
+            id: admin.id,
+            email: admin.email,
+            name: admin.name,
+            role: "admin",
+          };
+        }
+
+        return null;
       },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = (user as { role: string }).role;
+        token.userId = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { role?: string }).role = token.role as string;
+        (session.user as { id?: string }).id = token.userId as string;
+      }
+      return session;
+    },
+  },
   pages: {
-    signIn: "/admin/login",
+    signIn: "/login",
   },
   session: {
     strategy: "jwt",

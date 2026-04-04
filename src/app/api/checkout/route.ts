@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id || null;
+
     const body = await request.json();
     const { items, shipping } = body;
 
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
 
     // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
+    const stripeSession = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
       customer_email: shipping.email,
@@ -88,8 +93,9 @@ export async function POST(request: NextRequest) {
     // Create order in DB
     await prisma.order.create({
       data: {
-        stripeSessionId: session.id,
+        stripeSessionId: stripeSession.id,
         email: shipping.email,
+        userId,
         shippingName: shipping.name,
         shippingAddress: shipping.address,
         shippingCity: shipping.city,
@@ -103,7 +109,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: stripeSession.url });
   } catch (error) {
     console.error("Checkout error:", error);
     const message =

@@ -34,12 +34,23 @@ model Variant {
   orderItems OrderItem[]
 }
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  orders       Order[]
+}
+
 model Order {
   id              String      @id @default(cuid())
   stripeSessionId String      @unique
   stripePaymentId String?
   status          String      @default("pending") // pending, paid, failed
   email           String
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
   shippingName    String
   shippingAddress String
   shippingCity    String
