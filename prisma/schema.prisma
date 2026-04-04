@@ -76,6 +76,11 @@ model Order {
   shippingCost    Int         @default(0) // cents
   taxAmount       Int         @default(0) // cents
   totalAmount     Int         // cents (grand total)
+  trackingNumber  String?
+  notes           String?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
   createdAt       DateTime    @default(now())
   items           OrderItem[]
 }

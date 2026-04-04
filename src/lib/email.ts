@@ -112,6 +112,55 @@ function buildReceiptHtml(order: OrderData): string {
 </html>`;
 }
 
+interface ShippingOrder {
+  email: string;
+  shippingName: string;
+  id: string;
+}
+
+export async function sendShippingNotification(
+  order: ShippingOrder,
+  trackingNumber: string
+) {
+  try {
+    const { error } = await resend.emails.send({
+      from: "CF Store <onboarding@resend.dev>",
+      to: order.email,
+      subject: "Your CF order has shipped!",
+      html: `
+<!DOCTYPE html>
+<html>
+<body style="margin: 0; padding: 0; background-color: #f7f7f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <div style="background: #000; color: white; padding: 30px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px;">CF</h1>
+        <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.8;">Shipping Update</p>
+      </div>
+      <div style="padding: 30px;">
+        <p style="margin: 0 0 20px; font-size: 16px; color: #333;">
+          Hey ${order.shippingName}, your order is on its way!
+        </p>
+        ${trackingNumber ? `
+        <div style="padding: 20px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+          <p style="margin: 0 0 8px; font-size: 14px; color: #666;">Tracking Number</p>
+          <p style="margin: 0; font-size: 18px; font-weight: bold; font-family: monospace;">${trackingNumber}</p>
+        </div>` : ""}
+      </div>
+      <div style="padding: 20px 30px; background: #f9f9f9; text-align: center; font-size: 12px; color: #999;">
+        <p style="margin: 0;">Thank you for shopping with CF</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`,
+    });
+    if (error) console.error("Failed to send shipping email:", error);
+  } catch (err) {
+    console.error("Error sending shipping email:", err);
+  }
+}
+
 export async function sendOrderReceipt(order: OrderData) {
   try {
     const { error } = await resend.emails.send({
