@@ -35,6 +35,24 @@ export default async function AccountPage() {
         <SignOutButton />
       </div>
 
+      {/* Quick Links */}
+      <div className="mb-6 grid grid-cols-2 gap-4">
+        <Link
+          href="/account/addresses"
+          className="rounded-lg border border-gray-200 bg-white p-4 transition hover:bg-gray-50"
+        >
+          <p className="font-medium text-gray-900">Addresses</p>
+          <p className="text-sm text-gray-500">Manage saved addresses</p>
+        </Link>
+        <Link
+          href="/wishlist"
+          className="rounded-lg border border-gray-200 bg-white p-4 transition hover:bg-gray-50"
+        >
+          <p className="font-medium text-gray-900">Wishlist</p>
+          <p className="text-sm text-gray-500">View saved items</p>
+        </Link>
+      </div>
+
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <h2 className="mb-4 text-lg font-medium text-gray-900">
           Order History

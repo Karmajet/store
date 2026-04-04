@@ -52,10 +52,28 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
-  createdAt    DateTime   @default(now())
-  orders       Order[]
-  wishlist     Wishlist[]
-  reviews      Review[]
+  resetToken       String?    @unique
+  resetTokenExpiry DateTime?
+  createdAt        DateTime   @default(now())
+  orders           Order[]
+  wishlist         Wishlist[]
+  reviews          Review[]
+  addresses        Address[]
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   // e.g. "Home", "Work"
+  name      String
+  address   String
+  city      String
+  state     String
+  zip       String
+  country   String   @default("US")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Order {
