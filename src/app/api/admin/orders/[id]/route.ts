@@ -58,9 +58,17 @@ export async function PUT(
     },
   });
 
-  // Send shipping notification email
-  if (status === "shipped" && (trackingNumber || updatedOrder.trackingNumber)) {
-    await sendShippingNotification(updatedOrder, updatedOrder.trackingNumber || "");
+  // Send shipping notification email when:
+  // 1. Status just changed to "shipped", or
+  // 2. Tracking number was added/updated on an already-shipped order
+  const justShipped = status === "shipped";
+  const trackingUpdated =
+    trackingNumber &&
+    trackingNumber !== order.trackingNumber &&
+    (updatedOrder.status === "shipped" || updatedOrder.status === "delivered");
+
+  if ((justShipped || trackingUpdated) && updatedOrder.trackingNumber) {
+    await sendShippingNotification(updatedOrder, updatedOrder.trackingNumber);
   }
 
   return NextResponse.json(updatedOrder);
