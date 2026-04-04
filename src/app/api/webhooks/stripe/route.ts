@@ -52,6 +52,14 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Increment coupon usage
+      if (updatedOrder.couponId) {
+        await tx.coupon.update({
+          where: { id: updatedOrder.couponId },
+          data: { currentUses: { increment: 1 } },
+        });
+      }
+
       return updatedOrder;
     });
 

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const userId = (session?.user as { id?: string })?.id || null;
 
     const body = await request.json();
-    const { items, shipping } = body;
+    const { items, shipping, couponCode } = body;
 
     if (!items?.length || !shipping?.email) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Look up real prices from DB — never trust client
     const lineItems = [];
-    let totalAmount = 0;
+    let subtotal = 0;
     const orderItems: {
       productId: string;
       variantId: string | null;
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
       });
 
-      totalAmount += unitPrice * item.quantity;
+      subtotal += unitPrice * item.quantity;
       orderItems.push({
         productId: product.id,
         variantId,
@@ -84,7 +84,53 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Derive base URL from request headers (works on Vercel and localhost)
+    // Validate and apply coupon server-side
+    let couponId: string | null = null;
+    let discountAmount = 0;
+
+    if (couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode.toUpperCase() },
+      });
+
+      if (!coupon || !coupon.active) {
+        return NextResponse.json({ error: "Invalid coupon code" }, { status: 400 });
+      }
+      if (coupon.expiresAt && new Date() > coupon.expiresAt) {
+        return NextResponse.json({ error: "Coupon has expired" }, { status: 400 });
+      }
+      if (coupon.maxUses && coupon.currentUses >= coupon.maxUses) {
+        return NextResponse.json({ error: "Coupon usage limit reached" }, { status: 400 });
+      }
+      if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
+        return NextResponse.json({ error: "Order does not meet minimum for coupon" }, { status: 400 });
+      }
+
+      if (coupon.type === "percentage") {
+        discountAmount = Math.round(subtotal * (coupon.value / 100));
+      } else {
+        discountAmount = Math.min(coupon.value, subtotal);
+      }
+      couponId = coupon.id;
+
+      // Add discount as a negative line item in Stripe
+      if (discountAmount > 0) {
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Discount (${coupon.code})`,
+            },
+            unit_amount: -discountAmount,
+          },
+          quantity: 1,
+        });
+      }
+    }
+
+    const totalAmount = subtotal - discountAmount;
+
+    // Derive base URL from request headers
     const host = request.headers.get("host") || "localhost:3000";
     const protocol = host.includes("localhost") ? "http" : "https";
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
@@ -104,6 +150,8 @@ export async function POST(request: NextRequest) {
         stripeSessionId: stripeSession.id,
         email: shipping.email,
         userId,
+        couponId,
+        discountAmount,
         shippingName: shipping.name,
         shippingAddress: shipping.address,
         shippingCity: shipping.city,
