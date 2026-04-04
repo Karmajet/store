@@ -1,0 +1,144 @@
+# CF Store — Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          STOREFRONT (Next.js)                       │
+│                                                                     │
+│  ┌─────────┐  ┌──────────┐  ┌────────┐  ┌──────────┐  ┌─────────┐ │
+│  │ Homepage │  │ Product  │  │  Cart  │  │ Checkout │  │ Order   │ │
+│  │ /        │→ │ /[slug]  │→ │ /cart  │→ │ /checkout│→ │ Confirm │ │
+│  │ Grid     │  │ Variants │  │ Items  │  │ Shipping │  │ Receipt │ │
+│  └─────────┘  └──────────┘  └────────┘  └────┬─────┘  └─────────┘ │
+│                                               │                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐    │                     │
+│  │ Login    │  │ Register │  │ Account  │    │                     │
+│  │ /login   │  │ /register│  │ /account │    │                     │
+│  └──────────┘  └──────────┘  │ Orders   │    │                     │
+│                               └──────────┘    │                     │
+└───────────────────────────────────────────────┼─────────────────────┘
+                                                │
+                                                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                           API LAYER (Next.js Route Handlers)        │
+│                                                                     │
+│  PUBLIC                          ADMIN (role-protected)             │
+│  ┌──────────────────┐           ┌──────────────────────┐           │
+│  │ POST /api/checkout│──────┐   │ GET/POST /api/admin/ │           │
+│  │ POST /api/register│      │   │   products           │           │
+│  │ GET  /api/order   │      │   │ PUT/DEL /api/admin/  │           │
+│  │ POST /api/auth/*  │      │   │   products/[id]      │           │
+│  └──────────────────┘      │   │ POST/PATCH/DEL       │           │
+│                             │   │   variants           │           │
+│  WEBHOOK                    │   │ GET /api/admin/orders│           │
+│  ┌──────────────────┐      │   └──────────────────────┘           │
+│  │ POST /api/webhooks│◄─┐  │                                      │
+│  │   /stripe         │  │  │                                      │
+│  │ • Mark paid       │  │  │                                      │
+│  │ • Decrement stock │  │  │                                      │
+│  │ • Send receipt    │  │  │                                      │
+│  └──────────────────┘  │  │                                      │
+└────────────────────────┼──┼──────────────────────────────────────┘
+                         │  │
+          ┌──────────────┘  │
+          │                 │
+          ▼                 ▼
+┌──────────────┐   ┌──────────────┐
+│   STRIPE     │   │   NEON       │
+│              │   │  POSTGRES    │
+│ • Checkout   │   │              │
+│   Sessions   │   │ • Products   │
+│ • Payments   │   │ • Variants   │
+│ • Webhooks   │   │ • Orders     │
+│ • Refunds*   │   │ • Users      │
+│              │   │ • AdminUsers │
+└──────────────┘   │ • Coupons*   │
+                   │ • Categories*│
+                   │ • Reviews*   │
+                   └──────────────┘
+       │
+       │                ┌──────────────┐
+       │                │   RESEND     │
+       │                │              │
+       └───────────────►│ • Order      │
+        (via webhook)   │   receipts   │
+                        │ • Shipping*  │
+                        │   notices    │
+                        │ • Password*  │
+                        │   resets     │
+                        └──────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ADMIN DASHBOARD                              │
+│                                                                     │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐       │
+│  │ Dashboard │  │ Products  │  │  Orders   │  │ Analytics*│       │
+│  │ /admin    │  │ CRUD      │  │ View/     │  │ Revenue*  │       │
+│  │ Stats     │  │ Variants  │  │ Status*   │  │ Charts*   │       │
+│  │           │  │ Stock     │  │ Refunds*  │  │ Export*   │       │
+│  └───────────┘  └───────────┘  └───────────┘  └───────────┘       │
+│                                                                     │
+│  ┌───────────┐  ┌───────────┐                                      │
+│  │Categories*│  │ Coupons*  │   * = Planned (Phases 2-8)           │
+│  │ CRUD      │  │ CRUD      │                                      │
+│  └───────────┘  └───────────┘                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        INFRASTRUCTURE                               │
+│                                                                     │
+│  Vercel (Hosting)    GitHub (Code)    NextAuth (Auth)               │
+│  • Auto-deploy       • Karmajet/store • JWT sessions                │
+│  • Serverless fns    • Push to deploy • Customer + Admin roles      │
+│  • Edge network      • Main branch    • Credentials provider        │
+│                                                                     │
+│  Client State                                                       │
+│  • Cart → localStorage + React Context                              │
+│  • Auth → NextAuth SessionProvider                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+
+DATA FLOW: Purchase
+═══════════════════
+
+ Customer                    Server                    Stripe              DB
+    │                          │                         │                  │
+    │── Add to Cart ──────────►│ (localStorage)          │                  │
+    │                          │                         │                  │
+    │── Fill Shipping ────────►│                         │                  │
+    │── Submit Checkout ──────►│                         │                  │
+    │                          │── Validate prices ──────┼─── Query ───────►│
+    │                          │◄─── Product data ───────┼──────────────────│
+    │                          │── Check stock ──────────┼─── Query ───────►│
+    │                          │◄─── Stock levels ───────┼──────────────────│
+    │                          │                         │                  │
+    │                          │── Create Order ─────────┼─── Insert ──────►│
+    │                          │── Create Session ──────►│                  │
+    │                          │◄── Session URL ─────────│                  │
+    │◄── Redirect ─────────────│                         │                  │
+    │                          │                         │                  │
+    │── Pay on Stripe ────────►│                         │                  │
+    │                          │                         │                  │
+    │                          │◄── Webhook: paid ───────│                  │
+    │                          │── Update status ────────┼─── Update ──────►│
+    │                          │── Decrement stock ──────┼─── Update ──────►│
+    │                          │── Send receipt ─────────┼──► Resend        │
+    │                          │                         │                  │
+    │◄── Redirect to confirm ──│                         │                  │
+    │── Fetch order ──────────►│── Query ────────────────┼─────────────────►│
+    │◄── Order details ────────│◄────────────────────────┼──────────────────│
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Database | PostgreSQL (Neon, via Vercel Marketplace) |
+| ORM | Prisma 6 |
+| Auth | NextAuth.js 4 (JWT, credentials provider) |
+| Payments | Stripe (Checkout Sessions + Webhooks) |
+| Email | Resend |
+| Hosting | Vercel (auto-deploy from GitHub) |
+| Repo | github.com/Karmajet/store |

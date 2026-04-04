@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/products", label: "Products" },
+  { href: "/admin/categories", label: "Categories" },
   { href: "/admin/orders", label: "Orders" },
 ];
 

@@ -9,6 +9,15 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+model Category {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  products    Product[]
+}
+
 model Product {
   id          String      @id @default(cuid())
   name        String
@@ -17,6 +26,8 @@ model Product {
   imageUrl    String
   price       Int         // base price in cents
   active      Boolean     @default(true)
+  categoryId  String?
+  category    Category?   @relation(fields: [categoryId], references: [id])
   createdAt   DateTime    @default(now())
   variants    Variant[]
   orderItems  OrderItem[]

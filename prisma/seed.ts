@@ -9,6 +9,7 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.variant.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
 
   // Create admin user
   const passwordHash = await bcrypt.hash("admin123", 10);
@@ -22,6 +23,14 @@ async function main() {
     },
   });
 
+  // Create categories
+  const tees = await prisma.category.create({
+    data: { name: "Tees", slug: "tees", description: "Premium tennis-inspired t-shirts" },
+  });
+  const accessories = await prisma.category.create({
+    data: { name: "Accessories", slug: "accessories", description: "Hats, bags, and more" },
+  });
+
   // Create CF products
   const products = [
     {
@@ -31,6 +40,7 @@ async function main() {
         "Premium white t-shirt featuring the CF logo with tennis court outline. Clean design for on and off the court.",
       price: 3499,
       imageUrl: "/images/cf-court-tee-white.png",
+      categoryId: tees.id,
       variants: [
         { name: "Size", value: "S", sku: "CF-CTW-S", stock: 25, priceDiff: 0 },
         { name: "Size", value: "M", sku: "CF-CTW-M", stock: 50, priceDiff: 0 },
@@ -45,6 +55,7 @@ async function main() {
         "Classic white tee with the CF logo center chest. Minimal, versatile, and built for comfort.",
       price: 2999,
       imageUrl: "/images/cf-logo-tee-white.png",
+      categoryId: tees.id,
       variants: [
         { name: "Size", value: "S", sku: "CF-LT-S", stock: 20, priceDiff: 0 },
         { name: "Size", value: "M", sku: "CF-LT-M", stock: 40, priceDiff: 0 },
@@ -59,6 +70,7 @@ async function main() {
         'Statement tee with the "Just Watch" tennis player graphic. Bold design for those who let their game do the talking.',
       price: 3499,
       imageUrl: "/images/cf-just-watch-tee.png",
+      categoryId: tees.id,
       variants: [
         { name: "Size", value: "S", sku: "CF-JW-S", stock: 15, priceDiff: 0 },
         { name: "Size", value: "M", sku: "CF-JW-M", stock: 30, priceDiff: 0 },
@@ -73,6 +85,7 @@ async function main() {
         "Premium black t-shirt with the CF logo and court outline in white. A staple for any tennis wardrobe.",
       price: 3499,
       imageUrl: "/images/cf-court-tee-black.png",
+      categoryId: tees.id,
       variants: [
         { name: "Size", value: "S", sku: "CF-CTB-S", stock: 20, priceDiff: 0 },
         { name: "Size", value: "M", sku: "CF-CTB-M", stock: 45, priceDiff: 0 },
@@ -87,6 +100,7 @@ async function main() {
         "White and black snapback cap with the embroidered CF logo. Adjustable fit, perfect for match day or everyday.",
       price: 2499,
       imageUrl: "/images/cf-snapback.png",
+      categoryId: accessories.id,
       variants: [
         { name: "Size", value: "One Size", sku: "CF-SNAP-OS", stock: 50, priceDiff: 0 },
       ],
@@ -105,7 +119,7 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: admin user + 5 CF products");
+  console.log("Seed complete: admin user + 2 categories + 5 CF products");
 }
 
 main()
